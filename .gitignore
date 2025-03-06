@@ -1,0 +1,11 @@
+# Virtual environments
+.venv/
+venv/
+
+# Pycharm metadata
+.idea
+
+# Egg-info files
+*.egg-info/
+
+vcs.xml
