@@ -20,7 +20,7 @@
 
 ### Prerequisites
 
-- Python 3.11
+- Python >= 3.11
 
 ### Steps
 
@@ -40,4 +40,6 @@
    ```bash
    pip insatall -e .
 
-Now you are all set to running and developing EasyML.
+Now you are all set to running and developing EasyML. To run the app use the following command:
+   ```bash
+   streamlit run app.py
