@@ -59,6 +59,13 @@ def main():
         # Select target columns
         target_column = st.selectbox("Select Target Column", options=df.columns)
 
+        # Get training size
+        train_size = st.number_input("Training Size:", min_value=0.0, max_value=1.0, value=0.8)
+
+        # Get shuffle parameter
+        shuffle = st.selectbox("Shuffle Data For Training:", ["Yes", "No"])
+        shuffle = True if shuffle == "Yes" else False
+
         # Task type selection
         task_type = st.selectbox("Select Task Type", options=["Regression", "Classification"])
 
@@ -69,13 +76,13 @@ def main():
         else:
             model_choice = st.selectbox("Select Classification Model", options=classification_models)
 
-        engine = Engine(model_choice, df, target_column)
-        engine.set_features(feature_columns)
-
         # Train model button
         col1 , col2 = st.columns(2)
 
         with col1:
+            engine = Engine(model_choice, df, target_column, train_size=train_size, shuffle=shuffle)
+            engine.set_features(feature_columns)
+
             if st.button("Train Model"):
                 st.write("Training model...")
                 engine.train()
