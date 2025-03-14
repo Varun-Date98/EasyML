@@ -6,7 +6,7 @@ from EasyML.AutoML import AutoML
 
 
 def save_model_callback(engine):
-    model_save_path = engine.save_model("models/")
+    model_save_path = engine.save_model()
 
     with open(model_save_path, "rb") as f:
         st.session_state["model_bytes"] = f.read()
