@@ -32,7 +32,7 @@ classification_metrics = ["Classification Report", "Accuracy", "Precision", "Rec
 regression_metrics = ["RMSE", "MAE", "MSE", "R Squared"]
 
 scalers = ["Standard Scaler", "Min Max Scaler", "Robust Scaler"]
-encoders = ["One Hot Encoder", "Label Encoder", "Ordinal Encoder"]
+encoders = ["One Hot Encoder", "Ordinal Encoder"]
 
 
 class Engine:
@@ -83,8 +83,7 @@ class Engine:
 
         match self.encoder:
             case "One Hot Encoder": encoder = OneHotEncoder(handle_unknown="ignore")
-            case "Label Encoder": encoder = LabelEncoder()
-            case "Ordinal Encoder": encoder = OrdinalEncoder(handle_unknown="ignore")
+            case "Ordinal Encoder": encoder = OrdinalEncoder(handle_unknown="use_encoded_value", unknown_value=-1)
             case _: encoder = None
 
         return encoder

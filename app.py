@@ -151,10 +151,11 @@ def main():
             else:
                 st.dataframe(results)
 
+            download_label = "Download Trained Model" if button == "Standard ML" else "Download Best Model"
             engine = st.session_state["engine"]
 
             st.download_button(
-                label="Download trained model",
+                label=download_label,
                 data=st.session_state["model_bytes"] if st.session_state["model_bytes"] else b"",
                 file_name="model",
                 mime="application/octet-stream",
