@@ -2,6 +2,7 @@ import streamlit as st
 from EasyML import data
 from EasyML.models import (Engine, classification_models, regression_models, regression_metrics, classification_metrics,
                            scalers, encoders)
+from EasyML.AutoML import AutoML
 
 def main():
     # App name
@@ -88,35 +89,52 @@ def main():
 
         # Train model button
         col1 , col2 = st.columns(2)
+        button = ""
+        training_completed = False
 
         with col1:
-            engine = Engine(model=model_choice,
-                            data=df,
-                            features=feature_columns,
-                            target=target_column,
-                            task=task_type,
-                            scaler=scaler,
-                            encoder=encoder,
-                            metric=metric_type,
-                            train_size=train_size,
-                            shuffle=shuffle)
+            if st.button("Train selected model"):
+                button = "Standard ML"
 
-            if st.button("Train Model"):
-                st.write("Training model...")
-                engine.train()
-
-        # Auto ML process
         with col2:
             if st.button("Auto ML"):
-                st.write("Finding best model and parameters")
+                button = "Auto ML"
 
-        if engine.is_trained():
-            results = engine.get_metrics()
+        if button == "Standard ML":
+            with st.spinner("Training the model ..."):
+                engine = Engine(model=model_choice,
+                                data=df,
+                                features=feature_columns,
+                                target=target_column,
+                                task=task_type,
+                                scaler=scaler,
+                                encoder=encoder,
+                                metric=metric_type,
+                                train_size=train_size,
+                                shuffle=shuffle)
 
-            if isinstance(results, dict):
-                st.dataframe(results)
-            else:
+                engine.train()
+                results = engine.get_metrics()
+                training_completed = True
+        elif button == "Auto ML":
+            with st.spinner("Training Auto ML pipeline ..."):
+                auto_pipeline = AutoML(data=df,
+                                       feature_cols=feature_columns,
+                                       target=target_column,
+                                       train_size=train_size)
+
+                auto_pipeline.train()
+                results = auto_pipeline.get_leaderboard()
+                training_completed = True
+
+        if training_completed:
+            st.success("Training completed")
+            st.write("Results")
+
+            if isinstance(results, float):
                 st.write(f"{metric_type}: {results:.2f}")
+            else:
+                st.dataframe(results)
 
 
 if __name__ == "__main__":
