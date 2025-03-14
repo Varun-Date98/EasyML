@@ -4,6 +4,13 @@ from EasyML.models import (Engine, classification_models, regression_models, reg
                            scalers, encoders)
 from EasyML.AutoML import AutoML
 
+
+def save_model_callback(engine):
+    model_save_path = engine.save_model("models/")
+
+    with open(model_save_path, "rb") as f:
+        st.session_state["model_bytes"] = f.read()
+
 def main():
     # App name
     st.title("Easy ML")
@@ -92,6 +99,12 @@ def main():
         button = ""
         training_completed = False
 
+        if "engine" not in st.session_state:
+            st.session_state["engine"] = None
+
+        if "model_bytes" not in st.session_state:
+            st.session_state["model_bytes"] = None
+
         with col1:
             if st.button("Train selected model"):
                 button = "Standard ML"
@@ -116,16 +129,18 @@ def main():
                 engine.train()
                 results = engine.get_metrics()
                 training_completed = True
+                st.session_state["engine"] = engine
         elif button == "Auto ML":
             with st.spinner("Training Auto ML pipeline ..."):
-                auto_pipeline = AutoML(data=df,
+                engine = AutoML(data=df,
                                        feature_cols=feature_columns,
                                        target=target_column,
                                        train_size=train_size)
 
-                auto_pipeline.train()
-                results = auto_pipeline.get_leaderboard()
+                engine.train()
+                results = engine.get_leaderboard()
                 training_completed = True
+                st.session_state["engine"] = engine
 
         if training_completed:
             st.success("Training completed")
@@ -135,6 +150,17 @@ def main():
                 st.write(f"{metric_type}: {results:.2f}")
             else:
                 st.dataframe(results)
+
+            engine = st.session_state["engine"]
+
+            st.download_button(
+                label="Download trained model",
+                data=st.session_state["model_bytes"] if st.session_state["model_bytes"] else b"",
+                file_name="model",
+                mime="application/octet-stream",
+                on_click=save_model_callback,
+                args=[engine],
+            )
 
 
 if __name__ == "__main__":

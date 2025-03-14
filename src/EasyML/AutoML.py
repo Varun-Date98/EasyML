@@ -28,12 +28,15 @@ class AutoML:
         self.aml = None
         self.train_set = self.test_set = None
 
+        self.__trained = False
+
     def train(self):
         self.train_set, self.test_set = self.data.split_frame(ratios=[self.train_size], seed=self.seed)
 
         pipeline = H2OAutoML(max_models=5, seed=self.seed, max_runtime_secs=120, exclude_algos=exclude_list)
         pipeline.train(x=self.predictors, y=self.target, training_frame=self.train_set)
         self.aml = pipeline
+        self.__trained = True
 
     def get_leaderboard(self):
         return self.aml.leaderboard.as_data_frame(use_multi_thread=True)
@@ -44,9 +47,12 @@ class AutoML:
     def get_metrics(self):
         return self.aml.leader.model_performance(self.test_set)
 
-    def save_model(self, path: str):
+    def save_model(self, path: str) -> str:
         if not os.path.exists(path):
             raise ValueError(f"{path} does not exists. Provide a valid path to save the model.")
 
         model = self.aml.leader
-        h2o.save_model(model, path, force=True)
+        return h2o.save_model(model, path, force=True)
+
+    def is_trained(self):
+        return self.__trained
