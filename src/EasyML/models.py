@@ -1,4 +1,3 @@
-import os.path
 import pickle
 
 import numpy as np
@@ -203,12 +202,9 @@ class Engine:
                 case "MSE": return mean_squared_error(y_true=self.y_test, y_pred=y_pred)
                 case "R Squared": return r2_score(y_true=self.y_test, y_pred=y_pred)
 
-    def save_model(self, path: str) -> str:
-        if not os.path.exists(path):
-            raise ValueError(f"{path} does not exists. Provide a valid path to save the model.")
-
+    def save_model(self) -> str:
         model = self.model
-        model_save_path = os.path.join(path, "model.pkl")
+        model_save_path = "model.pkl"
 
         with open(model_save_path, "wb") as f:
             pickle.dump(model, f)

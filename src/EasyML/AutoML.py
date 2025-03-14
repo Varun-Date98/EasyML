@@ -1,5 +1,3 @@
-import os.path
-
 import pandas as pd
 from typing import List
 
@@ -47,12 +45,9 @@ class AutoML:
     def get_metrics(self):
         return self.aml.leader.model_performance(self.test_set)
 
-    def save_model(self, path: str) -> str:
-        if not os.path.exists(path):
-            raise ValueError(f"{path} does not exists. Provide a valid path to save the model.")
-
+    def save_model(self) -> str:
         model = self.aml.leader
-        return h2o.save_model(model, path, force=True)
+        return h2o.save_model(model, path="./", force=True)
 
     def is_trained(self):
         return self.__trained
