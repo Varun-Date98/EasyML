@@ -1,3 +1,6 @@
+import os.path
+import pickle
+
 import numpy as np
 import pandas as pd
 from typing import List
@@ -199,6 +202,18 @@ class Engine:
                 case "MAE": return mean_absolute_error(y_true=self.y_test, y_pred=y_pred)
                 case "MSE": return mean_squared_error(y_true=self.y_test, y_pred=y_pred)
                 case "R Squared": return r2_score(y_true=self.y_test, y_pred=y_pred)
+
+    def save_model(self, path: str) -> str:
+        if not os.path.exists(path):
+            raise ValueError(f"{path} does not exists. Provide a valid path to save the model.")
+
+        model = self.model
+        model_save_path = os.path.join(path, "model.pkl")
+
+        with open(model_save_path, "wb") as f:
+            pickle.dump(model, f)
+
+        return model_save_path
 
     def is_trained(self):
         return self.__trained
