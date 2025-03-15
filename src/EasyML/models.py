@@ -1,5 +1,4 @@
 import pickle
-
 import numpy as np
 import pandas as pd
 from typing import List
@@ -21,21 +20,31 @@ from sklearn.metrics import (classification_report, accuracy_score, precision_sc
                              root_mean_squared_error, mean_absolute_error, mean_squared_error)
 
 
+# List of classification models
 classification_models = ["Logistic Regression", "K-Neighbours Classifier", "Decision Tree",
                          "Gaussian NB", "SVC", "Random Forest", "Gradient Boosting Classifier"]
 
+# List of regression models
 regression_models = ["Linear Regression", "K-Neighbours Regressor", "Decision Tree Regressor",
                      "Ridge Regressor", "Lasso Regressor", "Random Forest Regressor",
                      "Gradient Boosting Regressor", "Ada Boost Regressor", "SVR"]
 
+# List of metrics for classification tasks
 classification_metrics = ["Classification Report", "Accuracy", "Precision", "Recall"]
+
+# List of metrics for regression tasks
 regression_metrics = ["RMSE", "MAE", "MSE", "R Squared"]
 
+# List of supported scalers
 scalers = ["Standard Scaler", "Min Max Scaler", "Robust Scaler"]
+
+# List of supported encoders
 encoders = ["One Hot Encoder", "Ordinal Encoder"]
 
 
 class Engine:
+    """Class to run ML pipeline on the data"""
+
     def __init__(self,
                  model: str,
                  data: pd.DataFrame,
@@ -48,6 +57,22 @@ class Engine:
                  train_size: float = 0.8,
                  stratify: bool = False,
                  shuffle: bool = True):
+        """
+        Creates a new engine instance
+
+        Args:
+            model (str): Name of the model
+            data (DataFrame): Input data datafame for the model
+            features List[str]: List of feature columns
+            target str: Column that needs to be predicted
+            task str: One of 'Regression' or 'Classification'
+            metric str: Evaluation metric for the model
+            scaler str: Scaler to be used
+            encoder str: Encoder to be used
+            train_size float: Fraction of data to be used for training
+            stratify bool: Whether to stratify target column while splitting. Default False.
+            shuffle bool: Whether to shuffle data while splitting. Default True.
+        """
         self.data = data
         self.target = target
         self.shuffle = shuffle
@@ -66,6 +91,12 @@ class Engine:
         self.__trained = False
 
     def _get_scaler(self):
+        """
+        Creates and returns the selected scaler object
+
+        Returns:
+            StandardScaler or MinMaxScaler or RobustScaler: An instance of the selected scikit learn scaler object
+        """
         if self.scaler not in scalers:
             raise ValueError(f"Scaler should be one of {scalers}, found {self.scaler}")
 
@@ -78,6 +109,12 @@ class Engine:
         return scaler
 
     def _get_encoder(self):
+        """
+        Creates and returns the selected encoder object
+
+        Returns:
+            OneHotEncoder or OrdinalEncoder: An instance of the selected scikit learn encoder
+        """
         if self.encoder not in encoders:
             raise ValueError(f"Encoder should be one of {encoders}, found {self.encoder}")
 
@@ -89,10 +126,25 @@ class Engine:
         return encoder
 
     def _get_y(self, target_col: pd.Series):
+        """
+        Method to get the Label encoded target column
+
+        Args:
+            target_col Series: Target column from the data
+
+        Returns:
+            Series: Label encoded target column
+        """
         encoder = LabelEncoder()
         return encoder.fit_transform(target_col)
 
     def _get_model(self):
+        """
+        Creates and returns the selected scikit-learn model based on the task and model name
+
+        Returns:
+            sklearn.base.BaseEstimator: An instance of a scikit-learn model
+        """
         if not (self.task in ["Regression", "Classification"]):
             raise ValueError(f"Task should be either Regression or Classification, got {self.task} instead")
 
@@ -127,6 +179,16 @@ class Engine:
         return model
 
     def _preprocessing(self):
+        """
+        Performs preprocessing on the input data by splitting features and target, scaling numeric features, and encoding categorical features.
+
+        Returns:
+            tuple: A tuple containing:
+                - X_train (array-like): Preprocessed training feature set.
+                - X_test (array-like): Preprocessed test feature set.
+                - y_train (array-like): Training target values.
+                - y_test (array-like): Test target values.
+        """
         X = self.data[self.features]
         y = self._get_y(self.data[self.target])
 
@@ -165,6 +227,7 @@ class Engine:
         return X_train, X_test, y_train, y_test
 
     def train(self):
+        """Trains the model after processing the training data"""
         try:
             self.model = self._get_model()
 
@@ -181,6 +244,13 @@ class Engine:
         self.__trained = True
 
     def get_metrics(self):
+        """
+        Computes and returns the evaluation metric for the trained model based on the task type.
+
+        Returns:
+            float or dict: The computed metric value. For example, a float value for Accuracy, Precision, etc., or a
+            dictionary for the classification report when "Classification Report" is selected.
+        """
         if not (self.metric in classification_metrics or self.metric in regression_metrics):
             raise ValueError("Not a valid metric. Please select a valid metric to train.")
 
@@ -202,8 +272,20 @@ class Engine:
                 case "R Squared": return r2_score(y_true=self.y_test, y_pred=y_pred)
 
     def save_model(self) -> str:
+        """
+        Serializes and saves the trained model to a file.
+
+        This method pickles the current model and writes it to a file named "model.pkl".
+        It then returns the file path where the model has been saved.
+
+        Returns:
+            str: The file path to the saved model.
+        """
         model = self.model
         model_save_path = "model.pkl"
+
+        if not self.__trained:
+            raise AttributeError("The model has not been trained. Train the model before saving it.")
 
         with open(model_save_path, "wb") as f:
             pickle.dump(model, f)
@@ -211,4 +293,10 @@ class Engine:
         return model_save_path
 
     def is_trained(self):
+        """
+        Checks whether the model has been trained.
+
+        Returns:
+            bool: True if the model has been successfully trained, False otherwise.
+        """
         return self.__trained
