@@ -254,15 +254,23 @@ class Engine:
         if not (self.metric in classification_metrics or self.metric in regression_metrics):
             raise ValueError("Not a valid metric. Please select a valid metric to train.")
 
+        res = {}
+        result = None
+        labels = np.unique(self.y_test)
         y_pred = self.model.predict(self.X_test)
         if self.task == "Classification":
             # Classification metrics
             match self.metric:
                 case "Accuracy": return accuracy_score(y_true=self.y_test, y_pred=y_pred)
-                case "Precision": return precision_score(y_true=self.y_test, y_pred=y_pred)
-                case "Recall": return recall_score(y_true=self.y_test, y_pred=y_pred)
+                case "Precision": result = precision_score(y_true=self.y_test, y_pred=y_pred, average=None, labels=labels)
+                case "Recall": result = recall_score(y_true=self.y_test, y_pred=y_pred, average=None, labels=labels)
                 case "Classification Report":
                     return classification_report(y_true=self.y_test, y_pred=y_pred, output_dict=True)
+
+            for label, value in zip(labels, result):
+                res[label] = value
+
+            return res
         else:
             # Regression metrics
             match self.metric:
