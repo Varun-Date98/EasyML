@@ -1,9 +1,7 @@
 import numpy as np
 import pandas as pd
 from typing import BinaryIO
-from sklearn.pipeline import Pipeline
 from sklearn.impute import SimpleImputer
-from sklearn.preprocessing import OneHotEncoder
 
 
 categorical_impute_options = ["Most Frequent", "Custom Value"]

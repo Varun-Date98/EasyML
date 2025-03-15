@@ -6,6 +6,11 @@ from EasyML.AutoML import AutoML
 
 
 def save_model_callback(engine):
+    """
+    Function to save the model object
+    Args:
+        engine: saved engine object with the trained model
+    """
     model_save_path = engine.save_model()
 
     with open(model_save_path, "rb") as f:
@@ -25,6 +30,7 @@ def main():
         # Display a preview of the data
         st.dataframe(df.head())
 
+        # Display null value counts in the data
         st.write("Null Value Counts")
         st.dataframe(df.isna().sum().rename_axis("Column").rename("Null Counts"))
 
@@ -46,14 +52,15 @@ def main():
         with col2:
             st.write("Null value check for categorical columns")
             categorical_imputation_method = st.selectbox(
-                "Select an option",
-                options=data.categorical_impute_options
-            )
+                                                "Select an option",
+                                                options=data.categorical_impute_options
+                                            )
 
             categorical_value = 0.0
             if categorical_imputation_method == "Custom Value":
                 value = st.text_input("Enter the custom value to impute")
 
+        # Impute missing data
         df = data.impute(df, numeric_imputation_method, "Numeric", value=numeric_value)
         df = data.impute(df, categorical_imputation_method, "Categorical", value=categorical_value)
 
@@ -74,7 +81,7 @@ def main():
         shuffle = st.selectbox("Shuffle Data For Training:", ["Yes", "No"])
         shuffle = True if shuffle == "Yes" else False
 
-        # Get input for scaler
+        # Get input for scaler and encoder
         col1, col2 = st.columns(2)
 
         with col1:
@@ -94,17 +101,19 @@ def main():
             model_choice = st.selectbox("Select Classification Model", options=classification_models)
             metric_type = st.selectbox("Select Evaluation Metric", options=classification_metrics)
 
-        # Train model button
-        col1 , col2 = st.columns(2)
         button = ""
         training_completed = False
+        col1 , col2 = st.columns(2)
 
+        # Create session variables for engine
         if "engine" not in st.session_state:
             st.session_state["engine"] = None
 
+        # Create session variables for engine
         if "model_bytes" not in st.session_state:
             st.session_state["model_bytes"] = None
 
+        # Train model buttons
         with col1:
             if st.button("Train selected model"):
                 button = "Standard ML"
@@ -114,6 +123,7 @@ def main():
                 button = "Auto ML"
 
         if button == "Standard ML":
+            # Start standard ML workflow
             with st.spinner("Training the model ..."):
                 engine = Engine(model=model_choice,
                                 data=df,
@@ -131,17 +141,19 @@ def main():
                 training_completed = True
                 st.session_state["engine"] = engine
         elif button == "Auto ML":
+            # Start Auto ML workflow
             with st.spinner("Training Auto ML pipeline ..."):
                 engine = AutoML(data=df,
-                                       feature_cols=feature_columns,
-                                       target=target_column,
-                                       train_size=train_size)
+                                feature_cols=feature_columns,
+                                target=target_column,
+                                train_size=train_size)
 
                 engine.train()
                 results = engine.get_leaderboard()
                 training_completed = True
                 st.session_state["engine"] = engine
 
+        # Display results if training is completed
         if training_completed:
             st.success("Training completed")
             st.write("Results")
@@ -154,6 +166,7 @@ def main():
             download_label = "Download Trained Model" if button == "Standard ML" else "Download Best Model"
             engine = st.session_state["engine"]
 
+            # Model download button
             st.download_button(
                 label=download_label,
                 data=st.session_state["model_bytes"] if st.session_state["model_bytes"] else b"",
