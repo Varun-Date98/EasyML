@@ -7,6 +7,7 @@ from EasyML.AutoML import AutoML
 
 
 def save_model_callback(engine):
+    """Saves the model in session state to allow downloading"""
     model_save_path = engine.save_model()
 
     with open(model_save_path, "rb") as f:
@@ -29,6 +30,16 @@ def main():
         st.session_state['target_column'] = target_column # Used session state.
         st.markdown("---")
 
+        try:
+            # Verify there are no null values in target column
+            data.check_target_column_null_values(df, target_column)
+        except KeyError as e:
+            st.write(str(e))
+            return
+        except ValueError as e:
+            st.write(str(e))
+            return
+
         # Display a preview of the data
         st.subheader("Dataframe Head")
         st.dataframe(df.head())
@@ -43,7 +54,7 @@ def main():
         if st.session_state.get('display_mode') == "EDA":
             st.subheader("Exploratory Data Analysis (EDA)")
             
-            # New Summary Stats Code
+            # Summary statistics subsection
             summary_stats = data.get_summary_statistics(df)
 
             st.subheader("Numeric Statistics Summary")
@@ -59,35 +70,16 @@ def main():
                 st.write("No Categorical Features to summarize.")
             st.markdown("---")
 
+            # Null values sub-section
             st.subheader("Null Value Counts")
             st.dataframe(df.isna().sum().rename_axis("Column").rename("Null Counts"))
 
-            # Null Value Imputation Recommendation
-
-            # st.subheader("Missing Value Imputation Recommendation")
-            
-            # imputation_recs = data.recommend_imputation(df, target_column=target_column)
-
-            # st.write("Numeric Columns")
-            # if imputation_recs['Numeric']:
-            #     numeric_rec_df = pd.DataFrame(list(imputation_recs['Numeric'].items()), columns = ["Columns", "Recommended Imputation"])
-            #     st.table(numeric_rec_df)
-            # else:
-            #     st.write("No Numeric Features Detected.")
-
-            # st.write("Categorical Columns")
-            # if imputation_recs['Categorical']:
-            #     categorical_rec_df = pd.DataFrame(list(imputation_recs['Categorical'].items()), columns = ["Columns", "Recommended Imputation"])
-            #     st.table(categorical_rec_df)
-            # else:
-            #     st.write("No categorical features detected.")
-
+            # Imputation recommendation subsection
             st.subheader("Missing Value Imputation Recommendation")
-            
             imputation_recs = data.recommend_imputation(df, target_column=target_column)
 
             # Numeric Columns
-            st.write("Numeric Columns")
+            st.write("**Numeric Columns**")
             if imputation_recs['Numeric']['columns']:
                 numeric_rec_df = pd.DataFrame(
                     list(imputation_recs['Numeric']['columns'].items()),
@@ -117,7 +109,7 @@ def main():
 
             st.markdown("---")
 
-
+        # Model training section
         elif st.session_state.get('display_mode') == "Train Model":
             st.subheader("Train Model")
 
@@ -143,12 +135,13 @@ def main():
                     options=data.categorical_impute_options
                 )
 
-                categorical_value = 0.0
+                categorical_value = ""
                 if categorical_imputation_method == "Custom Value":
                     value = st.text_input("Enter the custom value to impute")
 
+            # Run imputation of null values
             df = data.impute(df, numeric_imputation_method, "Numeric", value=numeric_value)
-            df = data.impute(df, categorical_imputation_method, "Categorical", value=categorical_value)
+            df = data.impute(df, categorical_imputation_method, "Categorical", category=categorical_value)
             
             st.markdown("---")
             
@@ -169,7 +162,7 @@ def main():
             shuffle = st.selectbox("Shuffle Data For Training:", ["Yes", "No"])
             shuffle = True if shuffle == "Yes" else False
 
-            # Get input for scaler
+            # Get input for scaler and encoder
             col1, col2 = st.columns(2)
 
             with col1:
@@ -208,10 +201,12 @@ def main():
                 if st.button("Train selected model"):
                     button = "Standard ML"
 
+            # Auto ML button
             with col2:
                 if st.button("Auto ML"):
                     button = "Auto ML"
-            
+
+            # Training pipelines
             if button == "Standard ML":
                 with st.spinner("Training the model ..."):
                     engine = Engine(model=model_choice,
@@ -243,6 +238,7 @@ def main():
 
             st.markdown("---")
 
+            # Results subsection
             if training_completed:
                 st.success("Training completed")
                 st.write("Results")

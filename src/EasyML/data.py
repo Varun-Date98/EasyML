@@ -5,10 +5,18 @@ from typing import BinaryIO
 from sklearn.impute import SimpleImputer
 
 
-categorical_impute_options = ["Most Frequent", "Custom Value"]
+categorical_impute_options = ["Drop", "Most Frequent", "Custom Value"]
 numeric_impute_options = ["Drop", "Mean", "Median", "Mode", "Custom Value"]
 
 def read_file(file: BinaryIO):
+    """
+    Read and return the uploaded file as a pandas DataFrame
+    Args:
+        file: uploaded file
+
+    Returns:
+        DataFrame: File read as a DataFrame
+    """
     df = None
 
     try:
@@ -22,8 +30,21 @@ def read_file(file: BinaryIO):
     finally:
         return df
 
-def impute(df: pd.DataFrame, strategy: str, dtype: str, value: float = 0.0):
-    print(df.isna().sum())
+def impute(df: pd.DataFrame, strategy: str, dtype: str, value: float = 0.0, category: str = ""):
+    """
+    Imputes missing values in the data according to the selected strategy
+
+    Args:
+        df (DataFrame): input DataFrame
+        strategy (str): One of [Drop, Most Frequent, Custom Value] for categorical columns and
+                        one of [Drop, Mean, Median, Mode, Custom Value] for numeric columns
+        dtype (str): Either Categorical or Numeric depending on which type of column is being worked on
+        value (float): User given value for numeric column imputation
+        category (str): User given value for categorical column imputation
+
+    Returns:
+        DataFrame: A copy of the input DataFrame after handling missing values
+    """
     columns = []
 
     for col in df.columns:
@@ -44,7 +65,12 @@ def impute(df: pd.DataFrame, strategy: str, dtype: str, value: float = 0.0):
     if strategy == "Custom Value":
         strategy = "constant"
 
-    imputer = SimpleImputer(strategy=strategy.lower(), fill_value=value)
+    if dtype == "Categorical":
+        custom_value = category
+    else:
+        custom_value = value
+
+    imputer = SimpleImputer(strategy=strategy.lower(), fill_value=custom_value)
 
     for col in columns:
         col_dt = df[col].dtype
@@ -59,7 +85,7 @@ def impute(df: pd.DataFrame, strategy: str, dtype: str, value: float = 0.0):
 
 def get_summary_statistics(df: pd.DataFrame) -> dict:
     """
-    Function to compute summary statistcs for the dataframe based off of the type of column being 'numerical' or 'categorical'
+    Function to compute summary statistics for the dataframe based off of the type of column being 'numerical' or 'categorical'
     """
     # Numeric Statistics
     numeric_df = df.select_dtypes(include=['number'])
@@ -75,27 +101,27 @@ def get_summary_statistics(df: pd.DataFrame) -> dict:
     # Categorical Statistics
     categorical_df = df.select_dtypes(exclude=['number'])
     if not categorical_df.empty:
-        categorcial_summary = pd.DataFrame({
+        categorical_summary = pd.DataFrame({
             'Count': categorical_df.count(),
             'Unique Values': categorical_df.nunique(),
             'Top': categorical_df.mode().iloc[0] if not categorical_df.mode().empty else None,
             'Top Freq': categorical_df.apply(lambda x: x.value_counts().iloc[0] if not x.value_counts().empty else None)
         })
     else:
-        categorcial_summary = pd.DataFrame
+        categorical_summary = pd.DataFrame
 
-    return {'numeric': numeric_summary, 'categorical': categorcial_summary}
+    return {'numeric': numeric_summary, 'categorical': categorical_summary}
 
 def recommend_imputation(df: pd.DataFrame, target_column: str = None) -> dict:
     """
-    Function to analyze datafrane and recommends an imputation strategy to the user for features.
+    Function to analyze dataframe and recommends an imputation strategy to the user for features.
     
     For Numeric Features:
     - If more than 50% values are missing, recommend 'Drop'.
     - If column is highly skewed i.e. skew>1, recommend 'Median'.
     - Otherwise recommend 'Mean'.
 
-    For Caregorical Features:
+    For Categorical Features:
     - If the column is the target column, skip recommendation.
     - If >50% missing, recommend 'Drop'.
     - Otherwise, recommend 'Most Frequent'.
@@ -103,7 +129,7 @@ def recommend_imputation(df: pd.DataFrame, target_column: str = None) -> dict:
     Majority Vote:
     - For Numeric columns, gather each column's recommendation, then pick the overall majority.
     - If there's a tie, suggest both.
-    - For cateforical columns, do the same.
+    - For categorical columns, do the same.
 
 
     Returns:
@@ -112,11 +138,11 @@ def recommend_imputation(df: pd.DataFrame, target_column: str = None) -> dict:
         {
             "columns": { col_name: recommendation},
             "majority_recommendation": <single recommendation or tie string>,
-            "implications": <string explaining the recommedation or tie>
+            "implications": <string explaining the recommendation or tie>
         }
     """
 
-    # Calculate per column recommendatiosn
+    # Calculate per column recommendations
     numeric_recs = {}
     categorical_recs = {}
 
@@ -142,7 +168,7 @@ def recommend_imputation(df: pd.DataFrame, target_column: str = None) -> dict:
 
         missing_pct = categorical_df[col].isna().mean()
         if missing_pct > 0.5:
-            rec = 'Drop' # TODO check with Varun for feature
+            rec = 'Drop'
         else:
             rec = 'Most Frequent'
         
@@ -238,3 +264,13 @@ def get_implications(recommendation, feature_type="numeric"):
             )
         else:
             return ""
+
+def check_target_column_null_values(df: pd.DataFrame, target: str):
+    if target not in df.columns:
+        raise KeyError(f"{target} not found in dataframe columns")
+
+    nulls = df[target].isna().any()
+
+    if nulls:
+        raise ValueError(f"Null values present in target ({target}) column. Please make sure there are "
+                         f"no null values in the target column.")
