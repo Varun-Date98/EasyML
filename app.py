@@ -15,6 +15,7 @@ def save_model_callback(engine):
 
 def main():
     # App name
+    st.set_page_config(page_title="Easy-ML")
     st.title("Easy ML")
 
     # File uploader area
