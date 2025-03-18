@@ -15,7 +15,7 @@
 
 
 ## Demo
-[![Demo Video](https://youtu.be/tuhsSEe3IRY/maxresdefault.jpg)](https://youtu.be/tuhsSEe3IRY)
+![Demo Video](assets/demo.gif)
 
 ## Installation
 
